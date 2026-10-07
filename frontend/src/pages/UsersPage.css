@@ -1,0 +1,281 @@
+.users-toolbar {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.users-summary {
+  color: #617185;
+  font-size: 12px;
+}
+
+.users-primary-button,
+.users-secondary-button {
+  min-height: 40px;
+  padding: 10px 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #00205b;
+  border-radius: 5px;
+  background: #00205b;
+  color: white;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.users-primary-button:hover {
+  background: #005587;
+  border-color: #005587;
+}
+
+.users-secondary-button {
+  background: white;
+  border-color: #dce4ec;
+  color: #00205b;
+}
+
+.users-secondary-button:hover {
+  border-color: #9db6c6;
+}
+
+.users-primary-button:disabled,
+.users-secondary-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.users-name {
+  color: #00205b;
+  font-weight: 500;
+}
+
+.users-status {
+  padding: 4px 9px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.users-status.active {
+  background: #edf5f0;
+  color: #3f6c57;
+}
+
+.users-status.blocked {
+  background: #fbeeee;
+  color: #a43939;
+}
+
+.users-detail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #00205b;
+  font-size: 12px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.users-detail-link:hover {
+  text-decoration: underline;
+}
+
+.users-table td {
+  overflow-wrap: anywhere;
+}
+
+.users-table .users-empty {
+  padding: 32px;
+  text-align: center;
+  color: #617185;
+}
+
+.users-pagination {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: #617185;
+  font-size: 12px;
+}
+
+.users-pagination > div {
+  display: flex;
+  gap: 8px;
+}
+
+.users-message {
+  padding: 28px;
+  border: 1px solid #e1e7ef;
+  border-radius: 7px;
+  color: #617185;
+}
+
+.users-message p {
+  margin: 0 0 16px;
+}
+
+.users-dialog {
+  width: min(560px, calc(100% - 32px));
+  max-height: calc(100dvh - 48px);
+  padding: 28px;
+  overflow-y: auto;
+  border: 1px solid #dce4ec;
+  border-radius: 10px;
+  background: white;
+  color: #152b48;
+  box-shadow: 0 20px 70px rgb(0 32 91 / 15%);
+}
+
+.users-dialog::backdrop {
+  background: rgb(0 20 50 / 35%);
+}
+
+.users-dialog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.users-dialog-heading h2 {
+  margin: 0;
+  color: #00205b;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.users-close-button {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #617185;
+}
+
+.users-close-button:hover {
+  background: #f0f4f8;
+}
+
+.users-form-description {
+  margin: 0 0 24px;
+  font-size: 13px;
+}
+
+.users-fields {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 20px;
+  border: 0;
+}
+
+.users-fields label {
+  display: grid;
+  gap: 7px;
+  color: #00205b;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.users-fields input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #c9d5e2;
+  border-radius: 5px;
+  background: white;
+  color: #152b48;
+  font-size: 14px;
+}
+
+.users-fields small {
+  color: #617185;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.users-name-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.users-dialog-actions {
+  margin-top: 28px;
+  padding-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-top: 1px solid #e1e7ef;
+}
+
+.users-dialog .users-form-error {
+  margin: 18px 0 0;
+  color: #a43939;
+  font-size: 12px;
+}
+
+.users-created p {
+  font-size: 13px;
+}
+
+.users-password {
+  margin: 24px 0 14px;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+  border: 1px solid #dce4ec;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.users-password span {
+  color: #617185;
+  font-size: 11px;
+}
+
+.users-password code {
+  color: #00205b;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.users-password-note {
+  color: #617185;
+}
+
+.users-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .users-toolbar,
+  .users-pagination {
+    flex-wrap: wrap;
+  }
+
+  .users-name-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .users-dialog {
+    padding: 22px;
+  }
+}

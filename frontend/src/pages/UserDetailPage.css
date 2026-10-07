@@ -1,0 +1,165 @@
+.user-detail-page {
+  display: grid;
+  gap: 24px;
+  width: 100%;
+}
+
+.detail-back {
+  justify-self: start;
+}
+
+.detail-panel {
+  padding: 24px;
+  background: #fff;
+  border: 1px solid var(--border, #dce4ec);
+  border-radius: 10px;
+}
+
+.detail-profile {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.detail-avatar {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  color: var(--airbus-blue, #00205b);
+  background: #edf3fa;
+}
+
+.detail-identity {
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-identity h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.detail-identity p {
+  color: var(--text-muted, #526579);
+  overflow-wrap: anywhere;
+}
+
+.detail-user-id {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-muted, #526579);
+  overflow-wrap: anywhere;
+}
+
+.detail-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  color: var(--airbus-blue, #00205b);
+}
+
+.detail-section-heading h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.detail-form {
+  margin-top: 24px;
+}
+
+.detail-form h3 {
+  margin: 0 0 18px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.detail-form fieldset {
+  display: grid;
+  gap: 18px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.detail-form-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 18px;
+}
+
+.detail-form label {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.detail-form input,
+.detail-form select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #ccd7e3;
+  border-radius: 6px;
+  color: #00205b;
+  background: #fff;
+}
+
+.detail-form button {
+  justify-self: start;
+}
+
+.detail-muted {
+  color: var(--text-muted, #526579);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.detail-error,
+.detail-success {
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.detail-error {
+  color: #b42318;
+}
+
+.detail-success {
+  color: #157347;
+}
+
+.detail-capitalize {
+  text-transform: capitalize;
+}
+
+button.users-detail-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .detail-profile {
+    flex-wrap: wrap;
+  }
+
+  .detail-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-panel {
+    padding: 18px;
+  }
+}
