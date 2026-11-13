@@ -15,6 +15,24 @@ IDLE_TIMEOUT = timedelta(minutes=15)
 ABSOLUTE_TIMEOUT = timedelta(hours=8)
 TOKEN_PATTERN = re.compile(r"[A-Za-z0-9_-]{43}\Z")
 
+def _require_unblocked_user(
+    db: Session,
+    *,
+    user_id: UUID,
+) -> User:
+    user = db.scalar(
+        select(User)
+        .where(User.id == user_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+
+    if user is None or user.is_blocked:
+        raise PermissionError(
+            "Usuario inexistente o bloqueado"
+        )
+
+    return user
 
 def _session_hash(token: str) -> str:
     return hashlib.sha256(token.encode("ascii")).hexdigest()
@@ -33,6 +51,7 @@ def _find_session(db: Session, token: str) -> UserSession | None:
 
 def create_admin_session(db: Session, *, user_id: UUID) -> str:
     """Crea una sesión AMH; el llamador debe confirmar la transacción."""
+    _require_unblocked_user(db, user_id=user_id)
     if not has_application_access(
         db,
         user_id=user_id,

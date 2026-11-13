@@ -36,7 +36,7 @@ $env:AMH_NFC_AGENT_TOKEN = [System.Net.NetworkCredential]::new(
 ).Password
 
 $env:AMH_NFC_API_URL = "http://127.0.0.1:8001"
-$env:AMH_NFC_FRONTEND_ORIGIN = "http://127.0.0.1:5173"
+$env:AMH_NFC_FRONTEND_ORIGIN = "http://127.0.0.1:5174"
 
 try {
     Push-Location $projectRoot

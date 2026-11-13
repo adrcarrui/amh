@@ -14,6 +14,7 @@ import {
 
 import { UsersPage } from "./pages/UsersPage";
 import { UserDetailPage } from "./pages/UserDetailPage";
+import { ATurnosPage } from "./pages/ATurnosPage";
 
 import "./App.css";
 
@@ -38,7 +39,8 @@ type PortalSession = {
 };
 
 type Status = "loading" | "authenticated" | "anonymous" | "error";
-type View = "workspace" | "users" | "applications";
+
+type View = "workspace" | "users" | "applications" | "aturnos";
 
 function isApplication(value: unknown): value is Application {
   if (typeof value !== "object" || value === null) {
@@ -65,8 +67,10 @@ function isRegisteredApplication(
     "id" in value &&
     typeof value.id === "string" &&
     "oidc_client_id" in value &&
-    (typeof value.oidc_client_id === "string" ||
-      value.oidc_client_id === null) &&
+    (
+      typeof value.oidc_client_id === "string" ||
+      value.oidc_client_id === null
+    ) &&
     "is_enabled" in value &&
     typeof value.is_enabled === "boolean"
   );
@@ -120,8 +124,11 @@ function ApplicationCard({ app }: { app: Application }) {
 
         <div>
           <h2>{app.display_name}</h2>
+
           <span className="application-category">
-            {isMySim ? "Maintenance & Support" : "Internal application"}
+            {isMySim
+              ? "Maintenance & Support"
+              : "Internal application"}
           </span>
         </div>
       </div>
@@ -188,7 +195,10 @@ export default function App() {
     const controller = new AbortController();
     let disposed = false;
 
-    const timeout = window.setTimeout(() => controller.abort(), 10000);
+    const timeout = window.setTimeout(
+      () => controller.abort(),
+      10000,
+    );
 
     async function loadSession() {
       setStatus("loading");
@@ -256,7 +266,10 @@ export default function App() {
     const controller = new AbortController();
     let disposed = false;
 
-    const timeout = window.setTimeout(() => controller.abort(), 10000);
+    const timeout = window.setTimeout(
+      () => controller.abort(),
+      10000,
+    );
 
     async function loadApplications() {
       setCatalogStatus("loading");
@@ -319,16 +332,15 @@ export default function App() {
         ? selectedUserId
           ? "User details"
           : "Users"
-        : "Applications";
+        : view === "aturnos"
+          ? "Import from aTurnos"
+          : "Applications";
 
   return (
     <div className="amh">
       <header className="amh-header">
         <a className="amh-brand" href="/" aria-label="AMH home">
-          <img
-            src="/brand/AIRBUS_White_UI.svg"
-            alt="Airbus"
-          />
+          <img src="/brand/AIRBUS_White_UI.svg" alt="Airbus" />
 
           <span className="brand-divider" />
 
@@ -380,7 +392,9 @@ export default function App() {
                   setSelectedUserId(null);
                   setView("workspace");
                 }}
-                aria-current={view === "workspace" ? "page" : undefined}
+                aria-current={
+                  view === "workspace" ? "page" : undefined
+                }
               >
                 <LayoutGrid size={18} aria-hidden="true" />
                 My applications
@@ -398,7 +412,9 @@ export default function App() {
                       view === "users" ? "selected" : ""
                     }`}
                     onClick={handleBackToUsers}
-                    aria-current={view === "users" ? "page" : undefined}
+                    aria-current={
+                      view === "users" ? "page" : undefined
+                    }
                   >
                     <Users size={18} aria-hidden="true" />
                     Users
@@ -419,6 +435,23 @@ export default function App() {
                   >
                     <PanelsTopLeft size={18} aria-hidden="true" />
                     Applications
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`navigation-item ${
+                      view === "aturnos" ? "selected" : ""
+                    }`}
+                    onClick={() => {
+                      setSelectedUserId(null);
+                      setView("aturnos");
+                    }}
+                    aria-current={
+                      view === "aturnos" ? "page" : undefined
+                    }
+                  >
+                    <Users size={18} aria-hidden="true" />
+                    aTurnos
                   </button>
                 </>
               )}
@@ -447,7 +480,10 @@ export default function App() {
               </span>
 
               <h1>Your applications, one place</h1>
-              <p>Sign in to access the tools available to your account.</p>
+
+              <p>
+                Sign in to access the tools available to your account.
+              </p>
 
               <a
                 className="primary-button"
@@ -508,20 +544,29 @@ export default function App() {
                 </>
               )}
 
-              {view === "users" && session.is_admin && (
-                selectedUserId ? (
-                  <UserDetailPage
-                    key={selectedUserId}
-                    userId={selectedUserId}
-                    onBack={handleBackToUsers}
-                    onSessionExpired={handleSessionExpired}
-                  />
-                ) : (
-                  <UsersPage
-                    onSessionExpired={handleSessionExpired}
-                    onManageUser={handleManageUser}
-                  />
-                )
+              {view === "users" &&
+                session.is_admin &&
+                (
+                  selectedUserId ? (
+                    <UserDetailPage
+                      key={selectedUserId}
+                      userId={selectedUserId}
+                      onBack={handleBackToUsers}
+                      onSessionExpired={handleSessionExpired}
+                    />
+                  ) : (
+                    <UsersPage
+                      onSessionExpired={handleSessionExpired}
+                      onManageUser={handleManageUser}
+                    />
+                  )
+                )}
+
+              {view === "aturnos" && session.is_admin && (
+                <ATurnosPage
+                  onSessionExpired={handleSessionExpired}
+                  onManageUser={handleManageUser}
+                />
               )}
 
               {view === "applications" && session.is_admin && (
@@ -568,7 +613,9 @@ export default function App() {
                                       : "disabled-status"
                                   }
                                 >
-                                  {app.is_enabled ? "Enabled" : "Disabled"}
+                                  {app.is_enabled
+                                    ? "Enabled"
+                                    : "Disabled"}
                                 </span>
                               </td>
                             </tr>

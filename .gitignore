@@ -1,34 +1,63 @@
-# AMH — FastAPI / Python + React / TypeScript / Vite
+# AMH — FastAPI / SQLAlchemy / PostgreSQL
+# React / TypeScript / Vite / Keycloak / NFC
 
+
+# --------------------------------------------------
 # Credenciales y configuración local
+# --------------------------------------------------
+
 .env
 .env.*
+
+# Plantillas sin secretos que sí se versionan
 !.env.example
 !.env.sample
 !.env.template
+
+# Claves privadas y almacenes de certificados
 *.pem
 *.key
 *.p12
 *.pfx
+*.jks
+*.keystore
 
+# Secretos cifrados del agente NFC
+*.dpapi
+
+
+# --------------------------------------------------
 # Entornos virtuales Python
+# --------------------------------------------------
+
 .venv/
+.venv-*/
 venv/
+venv-*/
 env/
 ENV/
 
+
+# --------------------------------------------------
 # Cachés y archivos compilados Python
+# --------------------------------------------------
+
 __pycache__/
 *.py[cod]
 *$py.class
 .Python
+
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 .pytype/
 .hypothesis/
 
+
+# --------------------------------------------------
 # Empaquetado Python
+# --------------------------------------------------
+
 build/
 dist/
 *.egg-info/
@@ -36,67 +65,179 @@ dist/
 .eggs/
 pip-wheel-metadata/
 
-# Cobertura y resultados de pruebas
+
+# --------------------------------------------------
+# Pruebas y cobertura
+# --------------------------------------------------
+
 .coverage
 .coverage.*
 htmlcov/
 coverage/
 coverage.xml
 junit.xml
+
 .tox/
 .nox/
+
 playwright-report/
 test-results/
+blob-report/
 
+
+# --------------------------------------------------
 # Node.js / React / Vite / TypeScript
+# --------------------------------------------------
+
 node_modules/
 .vite/
 .vite-temp/
 *.tsbuildinfo
 dist-ssr/
+
+.pnpm-store/
+.npm/
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-.pnpm-store/
+lerna-debug.log*
 
-# Registros de ejecución
+# Se versionan package.json y los lockfiles.
+
+
+# --------------------------------------------------
+# Registros y archivos de ejecución
+# --------------------------------------------------
+
 logs/
 *.log
 *.pid
 *.pid.lock
+*.stackdump
 
+
+# --------------------------------------------------
 # Bases de datos locales y copias de seguridad
+# --------------------------------------------------
+
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
+
 *.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+
 *.sqlite3
 *.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+
 *.backup
 *.dump
 
-# Configuración privada local de Keycloak
-# Los ejemplos saneados pueden guardarse fuera de estos directorios.
-keycloak/data/
-keycloak/exports/
+/backups/
+/local-backups/
 
-# Editores y archivos temporales
+# No se ignoran todos los *.sql:
+# pueden ser scripts necesarios del proyecto.
+
+
+# --------------------------------------------------
+# Exportaciones y propuestas de aTurnos
+# Pueden contener correos y otros datos personales.
+# --------------------------------------------------
+
+/scripts/aturnos_propuesta_*.csv
+
+/exports/
+/reports/
+/private/
+/secrets/
+
+
+# --------------------------------------------------
+# Datos privados y archivos generados de Keycloak
+# --------------------------------------------------
+
+/keycloak/data/
+/keycloak/exports/
+/keycloak/logs/
+/keycloak/conf/keycloak.conf
+
+# Se conservan los scripts, documentación y
+# plantillas saneadas de configuración de Keycloak.
+
+
+# --------------------------------------------------
+# Archivos comprimidos y paquetes locales
+# --------------------------------------------------
+
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.tgz
+
+
+# --------------------------------------------------
+# Editores
+# --------------------------------------------------
+
 .idea/
+
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.example.json
+
+*.code-workspace
 *.swp
 *.swo
 *~
+
+
+# --------------------------------------------------
+# Temporales
+# --------------------------------------------------
+
 *.tmp
 *.temp
+*.bak
+*.orig
+*.rej
 
+/tmp/
+/temp/
+
+
+# --------------------------------------------------
 # Sistema operativo
+# --------------------------------------------------
+
 .DS_Store
 ._*
 Thumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 
-# Se versionan: código, migrations/, alembic.ini, requirements.txt,
-# package.json, lockfiles de dependencias y ejemplos sin secretos.
+
+# --------------------------------------------------
+# Se versionan
+# --------------------------------------------------
+# app/
+# agents/
+# frontend/src/
+# migrations/
+# scripts/ (salvo archivos generados indicados arriba)
+# tests/
+# alembic.ini
+# requirements.txt
+# package.json
+# package-lock.json / otros lockfiles utilizados
+# README y documentación
+# Plantillas de configuración sin secretos

@@ -14,19 +14,28 @@ class Settings(BaseSettings):
     amh_db_name: str
     amh_db_user: str
     amh_db_password: SecretStr
+
     amh_uid_hmac_key_hex: SecretStr
+
     amh_oidc_issuer: str
     amh_oidc_client_id: str
     amh_oidc_client_secret: SecretStr
     amh_oidc_redirect_uri: str
     amh_oidc_state_secret: SecretStr
+
     amh_api_client_id: str
     amh_api_client_secret: SecretStr
+
     amh_nfc_agent_token: SecretStr
     amh_nfc_mysim_client_token: SecretStr
+
     amh_keycloak_admin_client_id: str = "amh_user_admin_dev"
     amh_keycloak_admin_client_secret: SecretStr
 
+    # Integracion aTurnos.
+    # Si falta el token, AMH puede arrancar, pero no consultar aTurnos.
+    amh_aturnos_team_id: str = "15945"
+    amh_aturnos_token: SecretStr | None = None
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_DIR / ".env",
@@ -50,11 +59,17 @@ class Settings(BaseSettings):
         value = self.amh_uid_hmac_key_hex.get_secret_value()
 
         if len(value) != 64:
-            raise ValueError("AMH_UID_HMAC_KEY_HEX debe contener 64 caracteres hexadecimales")
+            raise ValueError(
+                "AMH_UID_HMAC_KEY_HEX debe contener "
+                "64 caracteres hexadecimales"
+            )
 
         try:
             return bytes.fromhex(value)
         except ValueError as exc:
-            raise ValueError("AMH_UID_HMAC_KEY_HEX no es hexadecimal válido") from exc
-        
+            raise ValueError(
+                "AMH_UID_HMAC_KEY_HEX no es hexadecimal valido"
+            ) from exc
+
+
 settings = Settings()

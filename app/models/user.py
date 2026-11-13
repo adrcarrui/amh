@@ -7,6 +7,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     String,
+    Text,
     UniqueConstraint,
     func,
     false,
@@ -28,6 +29,11 @@ class User(Base):
     keycloak_subject: Mapped[str | None] = mapped_column(
         String(128),
         unique=True,
+    )
+    mysim_token_encrypted: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        deferred=True,
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     surname: Mapped[str] = mapped_column(String(150), nullable=False)

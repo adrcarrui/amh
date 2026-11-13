@@ -10,8 +10,8 @@ from app.keycloak_admin import (
     create_keycloak_user,
     delete_newly_created_keycloak_user,
 )
-from app.models import User, UserEmail
-
+from app.models import User, UserEmail, UserATurnosLink
+from app.models.aturnos_import_event import ATurnosImportEvent
 
 def create_managed_user(
     *,
@@ -20,6 +20,8 @@ def create_managed_user(
     name: str,
     surname: str,
     email: str,
+    aturnos_team_id: str | None = None,
+    aturnos_user_id: str | None = None,
 ) -> tuple[UUID, str]:
     """Crea la identidad y devuelve (ID AMH, contraseña temporal)."""
     username = username.strip()
@@ -31,8 +33,30 @@ def create_managed_user(
     if not all((username, name, surname, email)):
         raise ValueError("Todos los campos son obligatorios")
 
-    # Comprobación previa: evita llamar a Keycloak cuando AMH ya
-    # conoce ese email. La restricción UNIQUE sigue protegiendo carreras.
+    if len(name) > 100 or len(surname) > 150 or len(email) > 320:
+        raise ValueError("Nombre, apellidos o email demasiado largos")
+
+    # Los identificadores externos se proporcionan juntos.
+    if (aturnos_team_id is None) != (aturnos_user_id is None):
+        raise ValueError(
+            "Deben indicarse tanto el equipo como el usuario de aTurnos"
+        )
+
+    has_aturnos_link = aturnos_team_id is not None
+
+    if has_aturnos_link:
+        aturnos_team_id = str(aturnos_team_id).strip()
+        aturnos_user_id = str(aturnos_user_id).strip()
+
+        if not all(
+            value.isascii()
+            and value.isdecimal()
+            and len(value) <= 64
+            and int(value) > 0
+            for value in (aturnos_team_id, aturnos_user_id)
+        ):
+            raise ValueError("Identificadores de aTurnos no válidos")
+
     with SessionLocal.begin() as db:
         if not has_application_access(
             db,
@@ -50,7 +74,19 @@ def create_managed_user(
         if existing is not None:
             raise ValueError("El email ya está registrado en AMH")
 
-    # No se guarda en AMH. Se mostrará al administrador una sola vez.
+        if has_aturnos_link:
+            existing_link = db.scalar(
+                select(UserATurnosLink.id).where(
+                    UserATurnosLink.id_aturno == aturnos_team_id,
+                    UserATurnosLink.id_user == aturnos_user_id,
+                )
+            )
+            if existing_link is not None:
+                raise ValueError(
+                    "El usuario de aTurnos ya está enlazado en AMH"
+                )
+
+    # No se guarda en AMH.
     temporary_password = "Aa1!" + secrets.token_urlsafe(24)
 
     keycloak_user_id = create_keycloak_user(
@@ -63,7 +99,6 @@ def create_managed_user(
 
     try:
         with SessionLocal.begin() as db:
-            # El permiso puede haber cambiado mientras Keycloak respondía.
             if not has_application_access(
                 db,
                 user_id=actor_user_id,
@@ -89,17 +124,36 @@ def create_managed_user(
                     email_normalized=normalized_email,
                 )
             )
+
+            if has_aturnos_link:
+                db.add(
+                    UserATurnosLink(
+                        user_id=user.id,
+                        id_aturno=aturnos_team_id,
+                        id_user=aturnos_user_id,
+                    )
+                )
+
+                db.add(
+                    ATurnosImportEvent(
+                        user_id=user.id,
+                        actor_user_id=actor_user_id,
+                        id_aturno=aturnos_team_id,
+                        id_user=aturnos_user_id,
+                    )
+                )
+
             db.flush()
             amh_user_id = user.id
 
     except (IntegrityError, PermissionError):
-        # En estos casos sabemos que la transacción AMH no se confirmó.
+        # La transacción AMH no se confirmó.
         delete_newly_created_keycloak_user(keycloak_user_id)
         raise
 
     except Exception as exc:
-        # Un error de conexión durante commit podría ocurrir después
-        # de que PostgreSQL haya confirmado. No borramos a ciegas.
+        # Si el resultado del commit es incierto, no borramos
+        # la identidad de Keycloak sin comprobar PostgreSQL.
         raise RuntimeError(
             "No se pudo confirmar el alta en AMH. Revisa el usuario "
             f"de Keycloak {keycloak_user_id} antes de reintentar."

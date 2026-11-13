@@ -9,6 +9,11 @@ from sqlalchemy import select
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.sessions import SessionMiddleware
 
+from app.user_contact_routes import router as user_contact_router
+from app.user_primary_email_routes import router as user_primary_email_router
+from app.user_status_routes import router as user_status_router
+from app.models.user_aturnos_link import UserATurnosLink
+from app.aturnos_routes import router as aturnos_router
 from app.admin_routes import router as admin_router
 from app.application_access_routes import router as application_access_router
 from app.application_session_routes import router as application_session_router
@@ -112,7 +117,10 @@ app.include_router(admin_router)
 app.include_router(nfc_router)
 app.include_router(application_access_router)
 app.include_router(application_session_router)
-
+app.include_router(aturnos_router)
+app.include_router(user_contact_router)
+app.include_router(user_primary_email_router)
+app.include_router(user_status_router)
 # Cookie temporal usada por Authlib durante el flujo OIDC.
 app.add_middleware(
     SessionMiddleware,
@@ -424,6 +432,7 @@ async def admin_user_detail_api(
                 None if detail["email"] == "—" else detail["email"]
             ),
             "is_blocked": detail["is_blocked"],
+            "aturnos_links": detail["aturnos_links"],
             "grants": [
                 {
                     "display_name": display_name,
@@ -610,6 +619,15 @@ def _admin_user_detail(session_token: str, user_id: UUID):
             .order_by(Application.display_name)
         ).all()
 
+        aturnos_links = db.scalars(
+            select(UserATurnosLink)
+            .where(UserATurnosLink.user_id == user_id)
+            .order_by(
+                UserATurnosLink.id_aturno,
+                UserATurnosLink.id_user,
+            )
+        ).all()
+
         return {
             "name": user.name,
             "surname": user.surname or "",
@@ -617,6 +635,13 @@ def _admin_user_detail(session_token: str, user_id: UUID):
             "is_blocked": user.is_blocked,
             "grants": grants,
             "applications": applications,
+            "aturnos_links": [
+                {
+                    "id_aturno": link.id_aturno,
+                    "id_user": link.id_user,
+                }
+                for link in aturnos_links
+            ],
         }
 
 

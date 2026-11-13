@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { ArrowLeft, CreditCard, ShieldCheck, UserRound } from "lucide-react";
+import {
+  ArrowLeft,
+  CreditCard,
+  KeyRound,
+  Link2,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
+
+import { UserContactPanel } from "./UserContactPanel";
+import { UserStatusControl } from "./UserStatusControl";
 
 import "./UserDetailPage.css";
 
@@ -16,6 +26,11 @@ type Application = {
   display_name: string;
 };
 
+type ATurnosLink = {
+  id_aturno: string;
+  id_user: string;
+};
+
 type UserDetail = {
   id: string;
   name: string;
@@ -24,6 +39,7 @@ type UserDetail = {
   is_blocked: boolean;
   grants: Grant[];
   applications: Application[];
+  aturnos_links: ATurnosLink[];
 };
 
 type Props = {
@@ -31,6 +47,21 @@ type Props = {
   onBack: () => void;
   onSessionExpired: () => void;
 };
+
+function isATurnosLink(value: unknown): value is ATurnosLink {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const link = value as Record<string, unknown>;
+
+  return (
+    typeof link.id_aturno === "string" &&
+    link.id_aturno.length > 0 &&
+    typeof link.id_user === "string" &&
+    link.id_user.length > 0
+  );
+}
 
 export function UserDetailPage({
   userId,
@@ -41,6 +72,10 @@ export function UserDetailPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
+
+  const [mysimTokenConfigured, setMysimTokenConfigured] = useState<
+    boolean | null | undefined
+  >(undefined);
 
   const [savingAccess, setSavingAccess] = useState(false);
   const [accessMessage, setAccessMessage] = useState("");
@@ -53,11 +88,15 @@ export function UserDetailPage({
   useEffect(() => {
     const controller = new AbortController();
     let disposed = false;
-    const timeout = window.setTimeout(() => controller.abort(), 10000);
+
+    const timeout = window.setTimeout(() => {
+      controller.abort();
+    }, 10000);
 
     async function loadDetail() {
       setLoading(true);
       setError("");
+      setMysimTokenConfigured(undefined);
 
       try {
         const response = await fetch(
@@ -69,7 +108,9 @@ export function UserDetailPage({
           },
         );
 
-        if (disposed) return;
+        if (disposed) {
+          return;
+        }
 
         if (response.status === 401) {
           onSessionExpired();
@@ -97,12 +138,16 @@ export function UserDetailPage({
             data.primary_email === null
           ) ||
           !Array.isArray(data.grants) ||
-          !Array.isArray(data.applications)
+          !Array.isArray(data.applications) ||
+          !Array.isArray(data.aturnos_links) ||
+          !data.aturnos_links.every(isATurnosLink)
         ) {
           throw new Error("Invalid user response.");
         }
 
-        if (!disposed) setDetail(data);
+        if (!disposed) {
+          setDetail(data);
+        }
       } catch (cause) {
         if (!disposed) {
           setError(
@@ -115,7 +160,10 @@ export function UserDetailPage({
         }
       } finally {
         window.clearTimeout(timeout);
-        if (!disposed) setLoading(false);
+
+        if (!disposed) {
+          setLoading(false);
+        }
       }
     }
 
@@ -133,7 +181,9 @@ export function UserDetailPage({
       method: "POST",
       credentials: "include",
       cache: "no-store",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(body),
     });
 
@@ -157,9 +207,13 @@ export function UserDetailPage({
 
   async function saveAccess(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (savingAccess) return;
+
+    if (savingAccess) {
+      return;
+    }
 
     const fields = new FormData(event.currentTarget);
+
     setSavingAccess(true);
     setAccessMessage("");
     setAccessError("");
@@ -181,7 +235,9 @@ export function UserDetailPage({
       }
     } catch (cause) {
       setAccessError(
-        cause instanceof Error ? cause.message : "Unable to save access.",
+        cause instanceof Error
+          ? cause.message
+          : "Unable to save access.",
       );
     } finally {
       setSavingAccess(false);
@@ -190,7 +246,10 @@ export function UserDetailPage({
 
   async function assignCard(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (savingCard) return;
+
+    if (savingCard) {
+      return;
+    }
 
     const form = event.currentTarget;
     const fields = new FormData(form);
@@ -202,7 +261,9 @@ export function UserDetailPage({
     try {
       const saved = await postChange(
         `/api/v1/admin/users/${encodeURIComponent(userId)}/cards`,
-        { raw_uid: String(fields.get("raw_uid") ?? "").trim() },
+        {
+          raw_uid: String(fields.get("raw_uid") ?? "").trim(),
+        },
       );
 
       if (saved) {
@@ -211,12 +272,25 @@ export function UserDetailPage({
       }
     } catch (cause) {
       setCardError(
-        cause instanceof Error ? cause.message : "Unable to assign the card.",
+        cause instanceof Error
+          ? cause.message
+          : "Unable to assign the card.",
       );
     } finally {
       setSavingCard(false);
     }
   }
+
+  const isATurnosLinked = (detail?.aturnos_links.length ?? 0) > 0;
+
+  const mysimStatusText =
+    mysimTokenConfigured === undefined
+      ? "Checking token..."
+      : mysimTokenConfigured === null
+        ? "Token status unavailable"
+        : mysimTokenConfigured
+          ? "Token configured"
+          : "Token not configured";
 
   return (
     <section className="user-detail-page">
@@ -229,11 +303,12 @@ export function UserDetailPage({
         Back to users
       </button>
 
-      {loading && <p role="status">Loading user…</p>}
+      {loading && <p role="status">Loading user...</p>}
 
       {!loading && error && (
         <div className="detail-panel" role="alert">
           <p>{error}</p>
+
           <button
             type="button"
             className="users-secondary-button"
@@ -245,165 +320,232 @@ export function UserDetailPage({
       )}
 
       {!loading && !error && detail && (
-        <>
-          <section className="detail-panel detail-profile">
-            <div className="detail-avatar">
-              <UserRound size={28} />
-            </div>
+        <div className="detail-layout">
+          <div className="detail-column">
+            <section className="detail-panel detail-profile">
+              <div className="detail-profile-main">
+                <div className="detail-avatar">
+                  <UserRound size={28} />
+                </div>
 
-            <div className="detail-identity">
-              <h2>{detail.name} {detail.surname}</h2>
-              <p>{detail.primary_email ?? "No primary email"}</p>
-              <span className="detail-user-id">User ID: {detail.id}</span>
-            </div>
+                <div className="detail-identity">
+                  <h2>
+                    {detail.name} {detail.surname}
+                  </h2>
+                </div>
 
-            <span
-              className={`users-status ${
-                detail.is_blocked ? "blocked" : "active"
-              }`}
-            >
-              {detail.is_blocked ? "Blocked" : "Active"}
-            </span>
-          </section>
-
-          <section className="detail-panel">
-            <div className="detail-section-heading">
-              <ShieldCheck size={20} />
-              <h2>Application access</h2>
-            </div>
-
-            {detail.grants.length ? (
-              <div className="table-container">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Application</th>
-                      <th>Role</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {detail.grants.map((grant) => (
-                      <tr key={grant.application_code}>
-                        <td>{grant.display_name}</td>
-                        <td className="detail-capitalize">{grant.role}</td>
-                        <td className="detail-capitalize">{grant.status}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <UserStatusControl
+                  key={userId}
+                  userId={userId}
+                  isBlocked={detail.is_blocked}
+                  onSessionExpired={onSessionExpired}
+                  onStatusChanged={(isBlocked) => {
+                    setDetail((current) =>
+                      current
+                        ? {
+                          ...current,
+                          is_blocked: isBlocked,
+                        }
+                        : current,
+                    );
+                  }}
+                />
               </div>
-            ) : (
-              <p className="detail-muted">No application access assigned.</p>
-            )}
 
-            {detail.applications.length > 0 && (
-              <form className="detail-form" onSubmit={saveAccess}>
-                <h3>Assign or change access</h3>
+              <div className="detail-integrations">
+                <span
+                  className={`detail-integration ${isATurnosLinked ? "is-linked" : "is-neutral"
+                    }`}
+                >
+                  <Link2 size={16} />
+                  <span>aTurnos</span>
+                  <span className="detail-integration-value">
+                    {isATurnosLinked ? "Linked" : "Not linked"}
+                  </span>
+                </span>
 
-                <fieldset disabled={savingAccess}>
-                  <div className="detail-form-grid">
+                <span
+                  className={`detail-integration ${mysimTokenConfigured === true
+                      ? "is-linked"
+                      : "is-neutral"
+                    }`}
+                  title="Token management will be available with the mySim integration."
+                >
+                  <KeyRound size={16} />
+                  <span>mySim</span>
+                  <span className="detail-integration-value">
+                    {mysimStatusText}
+                  </span>
+                </span>
+              </div>
+            </section>
+
+            <section className="detail-panel detail-access-panel">
+              <div className="detail-section-heading">
+                <ShieldCheck size={20} />
+                <h2>Application access</h2>
+              </div>
+
+              {detail.grants.length > 0 ? (
+                <div className="table-container">
+                  <table className="detail-access-table">
+                    <thead>
+                      <tr>
+                        <th>Application</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {detail.grants.map((grant) => (
+                        <tr key={grant.application_code}>
+                          <td>{grant.display_name}</td>
+                          <td className="detail-capitalize">
+                            {grant.role}
+                          </td>
+                          <td className="detail-capitalize">
+                            {grant.status}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="detail-muted">
+                  No application access assigned.
+                </p>
+              )}
+
+              {detail.applications.length > 0 && (
+                <form className="detail-form" onSubmit={saveAccess}>
+                  <h3>Assign or change access</h3>
+
+                  <fieldset disabled={savingAccess}>
+                    <div className="detail-form-grid">
+                      <label>
+                        Application
+                        <select name="application_code" required>
+                          {detail.applications.map((application) => (
+                            <option
+                              key={application.code}
+                              value={application.code}
+                            >
+                              {application.display_name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label>
+                        Role
+                        <select name="role" defaultValue="viewer">
+                          <option value="viewer">Viewer</option>
+                          <option value="editor">Editor</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        Status
+                        <select name="status" defaultValue="active">
+                          <option value="active">Active</option>
+                          <option value="blocked">Blocked</option>
+                          <option value="revoked">Revoked</option>
+                        </select>
+                      </label>
+                    </div>
+
                     <label>
-                      Application
-                      <select name="application_code" required>
-                        {detail.applications.map((application) => (
-                          <option
-                            key={application.code}
-                            value={application.code}
-                          >
-                            {application.display_name}
-                          </option>
-                        ))}
-                      </select>
+                      Reason (optional)
+                      <input name="reason" maxLength={500} />
                     </label>
 
-                    <label>
-                      Role
-                      <select name="role" defaultValue="viewer">
-                        <option value="viewer">Viewer</option>
-                        <option value="editor">Editor</option>
-                        <option value="admin">Admin</option>
-                      </select>
-                    </label>
+                    <p className="detail-muted">
+                      Select Active for a first assignment. Blocking or
+                      revoking requires an existing assignment.
+                    </p>
 
-                    <label>
-                      Status
-                      <select name="status" defaultValue="active">
-                        <option value="active">Active</option>
-                        <option value="blocked">Blocked</option>
-                        <option value="revoked">Revoked</option>
-                      </select>
-                    </label>
-                  </div>
+                    <button
+                      className="users-primary-button"
+                      type="submit"
+                    >
+                      {savingAccess ? "Saving..." : "Save"}
+                    </button>
+                  </fieldset>
 
+                  {accessError && (
+                    <p className="detail-error" role="alert">
+                      {accessError}
+                    </p>
+                  )}
+
+                  {accessMessage && (
+                    <p className="detail-success" role="status">
+                      {accessMessage}
+                    </p>
+                  )}
+                </form>
+              )}
+            </section>
+          </div>
+
+          <div className="detail-column">
+            <UserContactPanel
+              key={userId}
+              userId={userId}
+              onSessionExpired={onSessionExpired}
+              onTokenStatusChange={setMysimTokenConfigured}
+            />
+
+            <section className="detail-panel detail-nfc-panel">
+              <div className="detail-section-heading">
+                <CreditCard size={20} />
+                <h2>NFC card</h2>
+              </div>
+
+              <p className="detail-muted">
+                Assign a card using the UID obtained from the reader.
+              </p>
+
+              <form className="detail-form" onSubmit={assignCard}>
+                <fieldset disabled={savingCard}>
                   <label>
-                    Reason (optional)
-                    <input name="reason" maxLength={500} />
+                    Card UID
+                    <input
+                      name="raw_uid"
+                      required
+                      minLength={8}
+                      maxLength={64}
+                      autoComplete="off"
+                      placeholder="Enter the card UID"
+                    />
                   </label>
-
-                  <p className="detail-muted">
-                    Select Active for a first assignment. Blocking or revoking
-                    requires an existing assignment.
-                  </p>
 
                   <button
                     className="users-primary-button"
                     type="submit"
                   >
-                    {savingAccess ? "Saving…" : "Save access"}
+                    {savingCard ? "Assigning..." : "Save"}
                   </button>
                 </fieldset>
 
-                {accessError && (
-                  <p className="detail-error" role="alert">{accessError}</p>
+                {cardError && (
+                  <p className="detail-error" role="alert">
+                    {cardError}
+                  </p>
                 )}
-                {accessMessage && (
+
+                {cardMessage && (
                   <p className="detail-success" role="status">
-                    {accessMessage}
+                    {cardMessage}
                   </p>
                 )}
               </form>
-            )}
-          </section>
-
-          <section className="detail-panel">
-            <div className="detail-section-heading">
-              <CreditCard size={20} />
-              <h2>NFC card</h2>
-            </div>
-
-            <p className="detail-muted">
-              Assign a card using the UID obtained from the reader.
-            </p>
-
-            <form className="detail-form" onSubmit={assignCard}>
-              <fieldset disabled={savingCard}>
-                <label>
-                  Card UID
-                  <input
-                    name="raw_uid"
-                    required
-                    minLength={8}
-                    maxLength={64}
-                    autoComplete="off"
-                    placeholder="Enter the card UID"
-                  />
-                </label>
-
-                <button className="users-primary-button" type="submit">
-                  {savingCard ? "Assigning…" : "Assign card"}
-                </button>
-              </fieldset>
-
-              {cardError && (
-                <p className="detail-error" role="alert">{cardError}</p>
-              )}
-              {cardMessage && (
-                <p className="detail-success" role="status">{cardMessage}</p>
-              )}
-            </form>
-          </section>
-        </>
+            </section>
+          </div>
+        </div>
       )}
     </section>
   );
