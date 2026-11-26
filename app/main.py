@@ -10,6 +10,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.user_contact_routes import router as user_contact_router
+from app.portal_nfc_routes import portal_nfc_app
 from app.user_primary_email_routes import router as user_primary_email_router
 from app.user_status_routes import router as user_status_router
 from app.models.user_aturnos_link import UserATurnosLink
@@ -23,6 +24,12 @@ from app.db import SessionLocal
 from app.models import Application, User, UserApplicationAccess, UserEmail
 from app.nfc_routes import router as nfc_router
 from app.oidc import oauth
+from app.maintenance_directory_routes import (
+    router as maintenance_directory_router,
+)
+from app.briefing_directory_routes import (
+    router as briefing_directory_router,
+)
 from app.session_service import (
     create_portal_session,
     get_admin_session_user_id,
@@ -112,6 +119,7 @@ UI_STYLE = """
 
 
 app = FastAPI(title="AMH - Access Management Hub")
+app.mount("/auth/nfc", portal_nfc_app)
 
 app.include_router(admin_router)
 app.include_router(nfc_router)
@@ -121,6 +129,8 @@ app.include_router(aturnos_router)
 app.include_router(user_contact_router)
 app.include_router(user_primary_email_router)
 app.include_router(user_status_router)
+app.include_router(maintenance_directory_router)
+app.include_router(briefing_directory_router)
 # Cookie temporal usada por Authlib durante el flujo OIDC.
 app.add_middleware(
     SessionMiddleware,

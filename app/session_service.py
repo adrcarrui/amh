@@ -223,11 +223,29 @@ def revoke_application_session(
     session.revoked_at = datetime.now(timezone.utc)
     db.flush()
 
-def create_portal_session(db: Session, *, user_id: UUID) -> str:
-    """Crea una sesión para entrar al portal AMH, sin exigir rol admin."""
-    user = db.get(User, user_id)
+def create_portal_session(
+    db: Session,
+    *,
+    user_id: UUID,
+    auth_method: str = "oidc",
+) -> str:
+    """Crea una sesion del portal. El llamador confirma."""
+    if auth_method not in {"oidc", "nfc"}:
+        raise ValueError(
+            "Metodo de autenticacion no valido"
+        )
+
+    user = db.scalar(
+        select(User)
+        .where(User.id == user_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+
     if user is None or user.is_blocked:
-        raise PermissionError("Usuario inexistente o bloqueado")
+        raise PermissionError(
+            "Usuario inexistente o bloqueado"
+        )
 
     application = db.scalar(
         select(Application).where(
@@ -235,8 +253,11 @@ def create_portal_session(db: Session, *, user_id: UUID) -> str:
             Application.is_enabled.is_(True),
         )
     )
+
     if application is None:
-        raise RuntimeError("La aplicación AMH no está disponible")
+        raise RuntimeError(
+            "La aplicacion AMH no esta disponible"
+        )
 
     token = secrets.token_urlsafe(32)
     now = datetime.now(timezone.utc)
@@ -246,11 +267,12 @@ def create_portal_session(db: Session, *, user_id: UUID) -> str:
             user_id=user_id,
             application_id=application.id,
             session_hash=_session_hash(token),
-            auth_method="oidc",
+            auth_method=auth_method,
             last_seen_at=now,
             expires_at=now + ABSOLUTE_TIMEOUT,
         )
     )
+
     db.flush()
     return token
 

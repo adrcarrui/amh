@@ -666,3 +666,35 @@ button.users-detail-link {
     max-width: none;
   }
 }
+
+.detail-nfc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.detail-nfc-heading .detail-section-heading {
+  margin-bottom: 0;
+}
+
+.detail-nfc-read {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+}
+
+.detail-nfc-reading {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border: 1px solid #cbdcf4;
+  border-radius: 6px;
+  color: #00205b;
+  background: #f0f6ff;
+  font-size: 13px;
+  line-height: 1.5;
+}

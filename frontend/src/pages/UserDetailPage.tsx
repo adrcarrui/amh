@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import {
   ArrowLeft,
-  CreditCard,
   KeyRound,
   Link2,
   ShieldCheck,
@@ -11,6 +10,7 @@ import {
 
 import { UserContactPanel } from "./UserContactPanel";
 import { UserStatusControl } from "./UserStatusControl";
+import { UserNfcPanel } from "./UserNfcPanel";
 
 import "./UserDetailPage.css";
 
@@ -80,10 +80,6 @@ export function UserDetailPage({
   const [savingAccess, setSavingAccess] = useState(false);
   const [accessMessage, setAccessMessage] = useState("");
   const [accessError, setAccessError] = useState("");
-
-  const [savingCard, setSavingCard] = useState(false);
-  const [cardMessage, setCardMessage] = useState("");
-  const [cardError, setCardError] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -244,43 +240,6 @@ export function UserDetailPage({
     }
   }
 
-  async function assignCard(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (savingCard) {
-      return;
-    }
-
-    const form = event.currentTarget;
-    const fields = new FormData(form);
-
-    setSavingCard(true);
-    setCardMessage("");
-    setCardError("");
-
-    try {
-      const saved = await postChange(
-        `/api/v1/admin/users/${encodeURIComponent(userId)}/cards`,
-        {
-          raw_uid: String(fields.get("raw_uid") ?? "").trim(),
-        },
-      );
-
-      if (saved) {
-        setCardMessage("Card assigned successfully.");
-        form.reset();
-      }
-    } catch (cause) {
-      setCardError(
-        cause instanceof Error
-          ? cause.message
-          : "Unable to assign the card.",
-      );
-    } finally {
-      setSavingCard(false);
-    }
-  }
-
   const isATurnosLinked = (detail?.aturnos_links.length ?? 0) > 0;
 
   const mysimStatusText =
@@ -366,8 +325,8 @@ export function UserDetailPage({
 
                 <span
                   className={`detail-integration ${mysimTokenConfigured === true
-                      ? "is-linked"
-                      : "is-neutral"
+                    ? "is-linked"
+                    : "is-neutral"
                     }`}
                   title="Token management will be available with the mySim integration."
                 >
@@ -499,51 +458,11 @@ export function UserDetailPage({
               onTokenStatusChange={setMysimTokenConfigured}
             />
 
-            <section className="detail-panel detail-nfc-panel">
-              <div className="detail-section-heading">
-                <CreditCard size={20} />
-                <h2>NFC card</h2>
-              </div>
-
-              <p className="detail-muted">
-                Assign a card using the UID obtained from the reader.
-              </p>
-
-              <form className="detail-form" onSubmit={assignCard}>
-                <fieldset disabled={savingCard}>
-                  <label>
-                    Card UID
-                    <input
-                      name="raw_uid"
-                      required
-                      minLength={8}
-                      maxLength={64}
-                      autoComplete="off"
-                      placeholder="Enter the card UID"
-                    />
-                  </label>
-
-                  <button
-                    className="users-primary-button"
-                    type="submit"
-                  >
-                    {savingCard ? "Assigning..." : "Save"}
-                  </button>
-                </fieldset>
-
-                {cardError && (
-                  <p className="detail-error" role="alert">
-                    {cardError}
-                  </p>
-                )}
-
-                {cardMessage && (
-                  <p className="detail-success" role="status">
-                    {cardMessage}
-                  </p>
-                )}
-              </form>
-            </section>
+            <UserNfcPanel
+              key={userId}
+              userId={userId}
+              onSessionExpired={onSessionExpired}
+            />
           </div>
         </div>
       )}
