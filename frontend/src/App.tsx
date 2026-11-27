@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 
 import {
   ArrowUpRight,
-  ChevronRight,
   Info,
   LayoutDashboard,
   LayoutGrid,
@@ -19,6 +18,16 @@ import { ATurnosPage } from "./pages/ATurnosPage";
 import "./App.css";
 
 const BACKEND = "http://127.0.0.1:8001";
+const ACCOUNT_TIME_FORMAT = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+const ACCOUNT_DATE_FORMAT = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
 
 type Application = {
   code: string;
@@ -34,11 +43,12 @@ type RegisteredApplication = Application & {
 
 type PortalSession = {
   user_id: string;
+  user_display_name?: string;
   applications: Application[];
   is_admin: boolean;
 };
 
-type Status = "loading" | "authenticated" | "anonymous" | "error";
+type Status = "loading" | "authenticated" | "error";
 
 type View = "workspace" | "users" | "applications" | "aturnos";
 
@@ -85,6 +95,8 @@ function isPortalSession(value: unknown): value is PortalSession {
 
   return (
     typeof data.user_id === "string" &&
+    (data.user_display_name === undefined ||
+      typeof data.user_display_name === "string") &&
     typeof data.is_admin === "boolean" &&
     Array.isArray(data.applications) &&
     data.applications.every(isApplication)
@@ -155,6 +167,33 @@ function ApplicationCard({ app }: { app: Application }) {
   );
 }
 
+function AccountClock() {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    let timer: number;
+
+    function updateClock() {
+      const current = new Date();
+      setNow(current);
+      timer = window.setTimeout(
+        updateClock,
+        60_000 - (current.getTime() % 60_000),
+      );
+    }
+
+    updateClock();
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  return (
+    <time className="account-clock" dateTime={now.toISOString()}>
+      <span className="account-clock-time">{ACCOUNT_TIME_FORMAT.format(now)}</span>
+      <span className="account-clock-date">{ACCOUNT_DATE_FORMAT.format(now)}</span>
+    </time>
+  );
+}
+
 export default function App() {
   const [status, setStatus] = useState<Status>("loading");
   const [session, setSession] = useState<PortalSession | null>(null);
@@ -175,10 +214,8 @@ export default function App() {
 
   const handleSessionExpired = useCallback(() => {
     setSession(null);
-    setStatus("anonymous");
-    setView("workspace");
-    setSelectedUserId(null);
-    setApplications([]);
+    setStatus("loading");
+    window.location.replace(`${BACKEND}/auth/login`);
   }, []);
 
   const handleManageUser = useCallback((userId: string) => {
@@ -346,7 +383,11 @@ export default function App() {
 
           <span className="brand-title">
             AMH
-            <small>Access Management Hub</small>
+            <small>
+              <span className="brand-initial">A</span>ccess{" "}
+              <span className="brand-initial">M</span>anagement{" "}
+              <span className="brand-initial">H</span>ub
+            </small>
           </span>
         </a>
 
@@ -356,12 +397,17 @@ export default function App() {
               <UserRound size={17} aria-hidden="true" />
             </span>
 
-            <span className="account-label">
-              Signed in
-              <small>
-                {session.is_admin ? "Administrator" : "Portal user"}
-              </small>
-            </span>
+            <div className="account-identity">
+              <span className="account-label">
+                <span className="account-name" title={session.user_display_name}>
+                  {session.user_display_name || "Account"}
+                </span>
+                <small>
+                  {session.is_admin ? "Administrator" : "Portal user"}
+                </small>
+              </span>
+              <AccountClock />
+            </div>
 
             <form method="post" action={`${BACKEND}/auth/logout`}>
               <button
@@ -473,28 +519,6 @@ export default function App() {
             </section>
           )}
 
-          {status === "anonymous" && (
-            <section className="session-panel">
-              <span className="section-label">
-                ACCESS MANAGEMENT HUB
-              </span>
-
-              <h1>Your applications, one place</h1>
-
-              <p>
-                Sign in to access the tools available to your account.
-              </p>
-
-              <a
-                className="primary-button"
-                href={`${BACKEND}/auth/login`}
-              >
-                Sign in
-                <ChevronRight size={17} aria-hidden="true" />
-              </a>
-            </section>
-          )}
-
           {status === "error" && (
             <section className="session-panel" role="alert">
               <h1>We couldn't load your workspace</h1>
@@ -512,11 +536,13 @@ export default function App() {
 
           {signedIn && (
             <>
-              <div className="page-heading">
-                <div>
-                  <h1>{pageTitle}</h1>
+              {(view !== "users" || selectedUserId !== null) && (
+                <div className="page-heading">
+                  <div>
+                    <h1>{pageTitle}</h1>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {view === "workspace" && (
                 <>

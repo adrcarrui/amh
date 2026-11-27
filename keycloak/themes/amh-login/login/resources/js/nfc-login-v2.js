@@ -1,5 +1,6 @@
 (() => {
   const AGENT = "http://127.0.0.1:8766";
+  const airbusLogo = new URL("../img/airbus-white.svg", document.currentScript.src);
 
   const CLIENTS = {
     amh_admin_dev: {
@@ -14,15 +15,94 @@
     },
   };
 
-  async function responseError(response, fallback) {
+  const NFC_COPY = {
+    english: {
+      label: "Contactless card sign-in",
+      title: "Sign in with your card",
+      prepare: "Getting the card reader ready…",
+      retry: "Try again",
+      startError: "Card sign-in is unavailable. Try again.",
+      invalidChallenge: "Could not start a card sign-in attempt.",
+      scanPrompt: "Hold your card near the reader.",
+      removeCard: "Move your card away, then hold it near the reader again.",
+      recognized: "Card recognized. Signing you in…",
+      finishError: "Could not sign you in. Try again.",
+      sessionError: "Could not confirm your AMH session.",
+      unexpectedScan: "The card reader returned an unexpected response.",
+      readError: "Could not read your card. Try again.",
+      connectionError: "Could not connect to AMH or the card reader. Check that both are running.",
+      genericError: "Could not sign in with your card.",
+    },
+    spanish: {
+      label: "Acceso con tarjeta NFC",
+      title: "O entra con tu tarjeta",
+      prepare: "Preparando inicio con tarjeta...",
+      retry: "Reintentar lectura",
+      startError: "No se pudo iniciar NFC",
+      invalidChallenge: "Desafio NFC no valido",
+      scanPrompt: "Acerca tu tarjeta al lector ACR122U",
+      removeCard: "Retira la tarjeta y vuelve a acercarla",
+      recognized: "Tarjeta reconocida. Iniciando sesion...",
+      finishError: "No se pudo crear la sesion",
+      unexpectedScan: "Respuesta del agente NFC no valida",
+      readError: "No se pudo leer la tarjeta",
+      connectionError: "No se pudo conectar con AMH o el agente NFC. Comprueba que esten iniciados.",
+      genericError: "No se pudo iniciar sesion con la tarjeta",
+    },
+  };
+
+  const ENGLISH_ERROR_DETAILS = new Map([
+    ["Lector no disponible", "Card reader unavailable."],
+    ["AMH no disponible", "AMH is unavailable."],
+    ["El intento NFC no pertenece a este navegador. Reintenta.", "This card sign-in attempt belongs to another browser session. Try again."],
+    ["Tarjeta no autorizada, usuario bloqueado o intento NFC caducado.", "The card is unauthorized, the account is blocked, or the sign-in attempt expired."],
+  ]);
+
+  async function responseError(response, fallback, useEnglish) {
     const data = await response.json().catch(() => null);
+
+    if (useEnglish) {
+      return ENGLISH_ERROR_DETAILS.get(data?.detail) ?? fallback;
+    }
 
     return typeof data?.detail === "string"
       ? data.detail
       : fallback + " (HTTP " + response.status + ")";
   }
 
+  function applyPortalBranding() {
+    document.body.classList.add("amh-portal-login");
+
+    const heading = document.getElementById("kc-header-wrapper");
+    if (heading) {
+      heading.replaceChildren();
+      for (const [index, word] of ["Access", "Management", "Hub"].entries()) {
+        if (index > 0) heading.append(" ");
+        const initial = document.createElement("span");
+        initial.className = "amh-brand-initial";
+        initial.textContent = word[0];
+        heading.append(initial, word.slice(1));
+      }
+    }
+
+    const footer = document.createElement("footer");
+    footer.className = "amh-brand-footer";
+    const logo = document.createElement("img");
+    logo.src = airbusLogo.href;
+    logo.alt = "Airbus";
+    logo.width = 402;
+    logo.height = 77;
+    footer.append(logo);
+    document.body.append(footer);
+  }
+
   function main() {
+    const pageClientId = new URL(location.href).searchParams.get("client_id");
+    if (document.getElementById("kc-logout-confirm")) {
+      if (CLIENTS[pageClientId]?.portal === true) applyPortalBranding();
+      return;
+    }
+
     const form = document.querySelector("#kc-form-login");
 
     if (!form || form.dataset.amhNfcReady === "1") {
@@ -31,10 +111,6 @@
 
     const actionClientId = new URL(
       form.action,
-      location.href,
-    ).searchParams.get("client_id");
-
-    const pageClientId = new URL(
       location.href,
     ).searchParams.get("client_id");
 
@@ -50,28 +126,37 @@
     }
 
     const config = CLIENTS[clientId];
+    const copy = config.portal ? NFC_COPY.english : NFC_COPY.spanish;
     form.dataset.amhNfcReady = "1";
 
+    if (config.portal) {
+      applyPortalBranding();
+      document.body.classList.add("amh-portal-sign-in");
+    }
+
     const box = document.createElement("section");
+    box.classList.add("amh-nfc-login");
     box.setAttribute(
       "aria-label",
-      "Acceso con tarjeta NFC",
+      copy.label,
     );
-    box.style.cssText =
-      "margin-top:1.5rem;padding-top:1.25rem;" +
-      "border-top:1px solid #d2d2d2;text-align:center";
+    if (!config.portal) {
+      box.style.cssText =
+        "margin-top:1.5rem;padding-top:1.25rem;" +
+        "border-top:1px solid #d2d2d2;text-align:center";
+    }
 
     const title = document.createElement("strong");
-    title.textContent = "O entra con tu tarjeta";
+    title.textContent = copy.title;
 
     const message = document.createElement("p");
     message.setAttribute("aria-live", "polite");
     message.style.marginTop = "0.75rem";
-    message.textContent = "Preparando lector NFC...";
+    message.textContent = copy.prepare;
 
     const retry = document.createElement("button");
     retry.type = "button";
-    retry.textContent = "Reintentar lectura";
+    retry.textContent = copy.retry;
     retry.hidden = true;
 
     box.append(title, message, retry);
@@ -113,7 +198,7 @@
       try {
         while (!stopped) {
           message.textContent =
-            "Preparando inicio con tarjeta...";
+            copy.prepare;
 
           const start = await fetch(
             config.backend + "/auth/nfc/start",
@@ -129,7 +214,8 @@
             throw new Error(
               await responseError(
                 start,
-                "No se pudo iniciar NFC",
+                copy.startError,
+                config.portal,
               ),
             );
           }
@@ -142,7 +228,7 @@
             !/^[A-Za-z0-9_-]{43}$/.test(challenge)
           ) {
             throw new Error(
-              "Desafio NFC no valido",
+              copy.invalidChallenge,
             );
           }
 
@@ -159,7 +245,7 @@
             Date.now() + (seconds - 2) * 1000;
 
           message.textContent =
-            "Acerca tu tarjeta al lector ACR122U";
+            copy.scanPrompt;
 
           while (
             !stopped &&
@@ -181,18 +267,18 @@
 
             if (scan.status === 204) {
               message.textContent =
-                "Acerca tu tarjeta al lector ACR122U";
+                copy.scanPrompt;
             } else if (scan.ok) {
               const result = await scan.json();
 
               if (result.status === "remove_card") {
                 message.textContent =
-                  "Retira la tarjeta y vuelve a acercarla";
+                  copy.removeCard;
               } else if (
                 result.status === "verified"
               ) {
                 message.textContent =
-                  "Tarjeta reconocida. Iniciando sesion...";
+                  copy.recognized;
 
                 const finish = await fetch(
                   config.backend + "/auth/nfc/finish",
@@ -212,7 +298,8 @@
                   throw new Error(
                     await responseError(
                       finish,
-                      "No se pudo crear la sesion",
+                      copy.finishError,
+                      config.portal,
                     ),
                   );
                 }
@@ -224,7 +311,7 @@
                     session.authenticated !== true
                   ) {
                     throw new Error(
-                      "No se pudo confirmar la sesion AMH",
+                      copy.sessionError,
                     );
                   }
                 }
@@ -237,14 +324,15 @@
                 return;
               } else {
                 throw new Error(
-                  "Respuesta del agente NFC no valida",
+                  copy.unexpectedScan,
                 );
               }
             } else {
               throw new Error(
                 await responseError(
                   scan,
-                  "No se pudo leer la tarjeta",
+                  copy.readError,
+                  config.portal,
                 ),
               );
             }
@@ -256,10 +344,10 @@
         if (!stopped) {
           message.textContent =
             error instanceof TypeError
-              ? "No se pudo conectar con AMH o el agente NFC. Comprueba que esten iniciados."
-              : error instanceof Error
+              ? copy.connectionError
+              : error instanceof Error && error.message && !(error instanceof SyntaxError)
                 ? error.message
-                : "No se pudo iniciar sesion con la tarjeta";
+                : copy.genericError;
 
           retry.hidden = false;
         }

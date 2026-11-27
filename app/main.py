@@ -193,14 +193,23 @@ def _portal_applications(user_id):
         ]
 
 
-def _is_portal_admin(user_id) -> bool:
+def _portal_account(user_id: UUID) -> tuple[str, bool]:
     with SessionLocal.begin() as db:
-        return has_application_access(
+        names = db.execute(
+            select(User.name, User.surname).where(User.id == user_id)
+        ).one_or_none()
+        display_name = ""
+        if names is not None:
+            name, surname = names
+            display_name = f"{name.strip()} {surname.strip()}".strip()
+
+        is_admin = has_application_access(
             db,
             user_id=user_id,
             application_code="amh",
             minimum_role="admin",
         )
+        return display_name, is_admin
 
 
 def _revoke_session(token: str | None) -> None:
@@ -313,14 +322,12 @@ async def portal_me(request: Request):
         _portal_applications,
         user_id,
     )
-    is_admin = await run_in_threadpool(
-        _is_portal_admin,
-        user_id,
-    )
+    display_name, is_admin = await run_in_threadpool(_portal_account, user_id)
 
     return JSONResponse(
         {
             "user_id": str(user_id),
+            "user_display_name": display_name,
             "applications": applications,
             "is_admin": is_admin,
         },
@@ -372,7 +379,7 @@ async def auth_logout(request: Request):
 @app.get("/auth/logged-out")
 def logged_out():
     return RedirectResponse(
-        url=f"{FRONTEND_URL}/",
+        url="/auth/login",
         status_code=303,
         headers={"Cache-Control": "no-store"},
     )

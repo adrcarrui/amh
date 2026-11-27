@@ -9,6 +9,8 @@
 }
 
 .amh-header {
+  position: relative;
+  isolation: isolate;
   min-height: 72px;
   padding: 16px 28px;
   display: flex;
@@ -17,6 +19,22 @@
   gap: 20px;
   background: #00205b;
   color: #ffffff;
+}
+
+.amh-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgb(115 216 251 / 14%),
+    rgb(115 216 251 / 46%) 52%,
+    rgb(115 216 251 / 25%)
+  );
+  mask: url("/brand/airbus-carbon-grid.webp") center 54% /
+    max(100%, 50rem) auto no-repeat;
 }
 
 .amh-brand {
@@ -47,28 +65,68 @@
 .brand-title small {
   display: block;
   margin-top: 4px;
-  color: #c8d6ea;
+  color: #ffffff;
   font-size: 11px;
   font-weight: 400;
+}
+
+.brand-initial {
+  color: #73d8fb;
 }
 
 .account-area {
   display: flex;
   align-items: center;
+  min-width: 0;
   gap: 10px;
 }
 
 .account-avatar {
   width: 34px;
   height: 34px;
+  flex: 0 0 34px;
   display: grid;
   place-items: center;
   background: rgb(255 255 255 / 13%);
   border-radius: 50%;
 }
 
-.account-label {
+.account-identity {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 16px;
+}
+
+.account-clock {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 4px;
+  padding-inline-start: 16px;
+  border-inline-start: 1px solid rgb(255 255 255 / 28%);
+  white-space: nowrap;
+}
+
+.account-clock-time {
   font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.account-clock-date {
+  color: #c8d6ea;
+  font-size: 11px;
+}
+
+.account-label {
+  min-width: 0;
+  font-size: 13px;
+}
+
+.account-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .account-label small {
@@ -466,12 +524,31 @@
   }
 
   .brand-title small,
-  .account-label {
+  .account-avatar,
+  .account-label small {
     display: none;
   }
 
   .account-area {
     gap: 4px;
+  }
+
+  .account-identity {
+    display: grid;
+    gap: 2px;
+  }
+
+  .account-clock {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 1px 6px;
+    padding-inline-start: 0;
+    border-inline-start: 0;
+  }
+
+  .account-clock-time {
+    font-size: 11px;
   }
 
   .account-area form {

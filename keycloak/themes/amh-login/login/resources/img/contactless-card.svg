@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="144" height="136" viewBox="0 0 144 136">
+  <g stroke="#00254d" stroke-width="2.5" stroke-linejoin="round">
+    <path d="M51 30V12h5v18" fill="#e5f3ff"/>
+    <rect x="48" y="29" width="11" height="9" rx="3" fill="#e5f3ff"/>
+    <path d="M49 33.5h9" fill="none" stroke-width="1.5"/>
+    <rect x="17" y="37" width="72" height="88" rx="9" fill="#e5f3ff"/>
+    <rect x="23" y="47" width="60" height="72" rx="6" fill="none" stroke-width="1.6"/>
+  </g>
+  <rect x="68" y="41" width="10" height="3.5" rx="1.75" fill="#00a5c8"/>
+  <path d="M66 68a16 16 0 1 0 0 29" fill="none" stroke="#00254d" stroke-width="3.3"/>
+  <path d="M64 78a7 7 0 0 1 0 9m4-12a11 11 0 0 1 0 15" fill="none"
+        stroke="#0085ad" stroke-width="2.6" stroke-linecap="round"/>
+  <g id="card-and-user" transform="rotate(20 101 85)">
+    <rect id="card" x="79" y="51" width="44" height="68" rx="5"
+          fill="#007da4" stroke="#00254d" stroke-width="2.5"/>
+    <g id="user-symbol" fill="#fff">
+      <circle cx="101" cy="73.5" r="7.5"/>
+      <path d="M87 100v-2a14 14 0 0 1 28 0v2H87Z"/>
+    </g>
+  </g>
+</svg>

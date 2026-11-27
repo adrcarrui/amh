@@ -1,7 +1,9 @@
 from fastapi import APIRouter, HTTPException, Request, Response
+from sqlalchemy import select
 from starlette.concurrency import run_in_threadpool
 
 from app.db import SessionLocal
+from app.models.user import User
 from app.session_service import (
     get_application_session_access,
     revoke_application_session,
@@ -24,36 +26,53 @@ def _bearer_token(request: Request) -> str:
     return token.strip()
 
 
-def _check_session(token: str, application_code: str):
+def _check_session(token: str, application_code: str, include_profile: bool):
     with SessionLocal.begin() as db:
-        return get_application_session_access(
+        access = get_application_session_access(
             db,
             token=token,
             application_code=application_code,
         )
+        if access is None:
+            return None
+
+        user_id, role = access
+        result = {
+            "user_id": user_id,
+            "application_code": application_code,
+            "role": role,
+        }
+        if include_profile:
+            profile = db.execute(
+                select(User.name, User.surname).where(User.id == user_id)
+            ).one_or_none()
+            display_name = None
+            if profile is not None:
+                name, surname = profile
+                display_name = f"{name.strip()} {surname.strip()}".strip() or None
+            result["display_name"] = display_name
+
+        return result
 
 
 @router.get("/{application_code}")
 async def check_application_session(
     application_code: str,
     request: Request,
+    include_profile: bool = False,
 ):
     token = _bearer_token(request)
     result = await run_in_threadpool(
         _check_session,
         token,
         application_code,
+        include_profile,
     )
 
     if result is None:
         raise HTTPException(status_code=401, detail="Sesión no válida")
 
-    user_id, role = result
-    return {
-        "user_id": user_id,
-        "application_code": application_code,
-        "role": role,
-    }
+    return result
 
 
 def _revoke_session(token: str, application_code: str) -> None:

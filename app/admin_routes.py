@@ -6,15 +6,23 @@ from fastapi.responses import JSONResponse
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator, EmailStr
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import aliased
 from starlette.concurrency import run_in_threadpool
 
 from app.user_creation_service import create_managed_user
 from app.access_service import set_application_access
 from app.config import settings
 from app.db import SessionLocal
-from app.models import Application, User, UserEmail, ApplicationEvent
+from app.models import (
+    Application,
+    ApplicationEvent,
+    User,
+    UserApplicationAccess,
+    UserCard,
+    UserEmail,
+)
 from app.session_service import get_admin_session_user_id
 from app.card_service import CardAlreadyRegisteredError, assign_card
 
@@ -76,6 +84,13 @@ def _list_users(
     session_token: str | None,
     limit: int,
     offset: int,
+    name: str = "",
+    email: str = "",
+    status: Literal["active", "blocked"] | None = None,
+    no_application_access: bool = False,
+    no_nfc_card: bool = False,
+    secondary_email: str = "",
+    nfc: Literal["linked", "not_linked"] | None = None,
 ):
     if not session_token:
         return None
@@ -85,23 +100,71 @@ def _list_users(
         if admin_id is None:
             return None
 
+        application_count = (
+            select(func.count())
+            .select_from(UserApplicationAccess)
+            .join(Application, Application.id == UserApplicationAccess.application_id)
+            .where(
+                UserApplicationAccess.user_id == User.id,
+                UserApplicationAccess.status == "active",
+                Application.is_enabled.is_(True),
+                Application.code != "amh",
+            )
+            .correlate(User)
+            .scalar_subquery()
+        )
+        has_nfc_card = (
+            select(UserCard.id)
+            .where(
+                UserCard.user_id == User.id,
+                UserCard.status == "active",
+            )
+            .correlate(User)
+            .exists()
+        )
+
+        secondary = aliased(UserEmail)
+        query = select(
+            User.id,
+            User.name,
+            User.surname,
+            User.is_blocked,
+            UserEmail.email,
+            UserEmail.verified_at,
+            secondary.email,
+            application_count.label("application_count"),
+            has_nfc_card.label("has_nfc_card"),
+        ).outerjoin(
+            UserEmail,
+            (UserEmail.user_id == User.id) & (UserEmail.kind == "primary"),
+        ).outerjoin(
+            secondary,
+            (secondary.user_id == User.id) & (secondary.kind == "secondary"),
+        )
+
+        name = name.strip()
+        email = email.strip()
+        secondary_email = secondary_email.strip()
+        if name:
+            full_name = User.name + " " + func.coalesce(User.surname, "")
+            query = query.where(full_name.icontains(name, autoescape=True))
+        if email:
+            query = query.where(UserEmail.email.icontains(email, autoescape=True))
+        if secondary_email:
+            query = query.where(secondary.email.icontains(secondary_email, autoescape=True))
+        if status is not None:
+            query = query.where(User.is_blocked.is_(status == "blocked"))
+        if no_application_access:
+            query = query.where(application_count == 0)
+        if no_nfc_card or nfc == "not_linked":
+            query = query.where(~has_nfc_card)
+        elif nfc == "linked":
+            query = query.where(has_nfc_card)
+
         rows = db.execute(
-            select(
-                User.id,
-                User.name,
-                User.surname,
-                User.is_blocked,
-                UserEmail.email,
-                UserEmail.verified_at,
-            )
-            .outerjoin(
-                UserEmail,
-                (UserEmail.user_id == User.id)
-                & (UserEmail.kind == "primary"),
-            )
-            .order_by(User.name, User.surname, User.id)
+            query.order_by(User.name, User.surname, User.id)
             .offset(offset)
-            .limit(limit)
+            .limit(limit + 1)
         ).all()
 
         return {
@@ -112,7 +175,10 @@ def _list_users(
                     "surname": surname,
                     "is_blocked": is_blocked,
                     "primary_email": email,
+                    "secondary_email": extra_email,
                     "primary_email_verified": verified_at is not None,
+                    "application_count": app_count,
+                    "has_nfc_card": nfc_linked,
                 }
                 for (
                     user_id,
@@ -121,10 +187,14 @@ def _list_users(
                     is_blocked,
                     email,
                     verified_at,
-                ) in rows
+                    extra_email,
+                    app_count,
+                    nfc_linked,
+                ) in rows[:limit]
             ],
             "limit": limit,
             "offset": offset,
+            "has_more": len(rows) > limit,
         }
 
 
@@ -133,12 +203,26 @@ async def list_users(
     request: Request,
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
+    name: str = Query(default="", max_length=251),
+    email: str = Query(default="", max_length=320),
+    status: Literal["active", "blocked"] | None = None,
+    no_application_access: bool = False,
+    no_nfc_card: bool = False,
+    secondary_email: str = Query(default="", max_length=320),
+    nfc: Literal["linked", "not_linked"] | None = None,
 ):
     result = await run_in_threadpool(
         _list_users,
         request.cookies.get("amh_session"),
         limit,
         offset,
+        name,
+        email,
+        status,
+        no_application_access,
+        no_nfc_card,
+        secondary_email,
+        nfc,
     )
     if result is None:
         raise HTTPException(status_code=401, detail="Sesión AMH no válida")

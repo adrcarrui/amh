@@ -1,0 +1,211 @@
+@font-face {
+  font-family: Inter;
+  src: url("../fonts/inter-variable.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+body.amh-portal-login {
+  --amh-blue: #00205b;
+  --amh-secondary-blue: #005587;
+  --amh-cyan: #0085ad;
+  --amh-ink: #152b48;
+  --amh-muted: #526579;
+  --amh-nfc-divider: #dce4ec;
+  --keycloak-card-top-color: var(--amh-cyan);
+  --pf-v5-global--FontFamily--sans-serif: Inter, system-ui, sans-serif;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  color-scheme: light;
+  font-family: var(--pf-v5-global--FontFamily--sans-serif);
+  background:
+    radial-gradient(ellipse at 16% 0%, #005587 0%, transparent 58%),
+    radial-gradient(ellipse at 100% 100%, #00336d 0%, transparent 54%),
+    #00205b;
+}
+
+.amh-portal-login::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: #73d8fb;
+  mask: url("../img/airbus-carbon-grid.webp") center 76% / max(100%, 57rem) auto no-repeat;
+  opacity: 0.57;
+}
+
+.amh-portal-login .pf-v5-c-login {
+  --pf-v5-c-login__header--MarginBottom: clamp(1rem, 3vh, 1.875rem);
+  flex: 1 0 auto;
+  min-height: 0;
+}
+
+@media (max-width: 767px) {
+  .amh-portal-login::before {
+    mask-position: center 88%;
+  }
+
+  .amh-portal-login .pf-v5-c-login {
+    align-items: center;
+    padding-inline: 1rem;
+  }
+}
+
+.amh-portal-login .pf-v5-c-login__container {
+  grid-template-columns: minmax(0, 34rem);
+}
+
+.amh-portal-login .pf-v5-c-login__main {
+  --pf-v5-c-login__main--BackgroundColor: #fff;
+  --pf-v5-global--Color--100: var(--amh-ink);
+  --pf-v5-global--Color--200: var(--amh-muted);
+  color: var(--amh-ink);
+  box-shadow: 0 16px 56px rgb(0 12 41 / 32%);
+}
+
+.amh-portal-login #kc-header-wrapper {
+  font-size: clamp(1.5rem, 5vw, 2.625rem);
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  text-transform: none;
+  color: #fff !important;
+}
+
+.amh-portal-login .amh-brand-initial {
+  color: #73d8fb;
+}
+
+.amh-portal-login .amh-brand-footer {
+  flex: 0 0 auto;
+  padding: 0.625rem 1rem max(1.5rem, env(safe-area-inset-bottom));
+}
+
+.amh-portal-login .amh-brand-footer img {
+  display: block;
+  width: 7.875rem;
+  height: auto;
+  margin-inline: auto;
+}
+
+.amh-portal-login #kc-page-title {
+  color: var(--amh-blue);
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+.amh-portal-login .pf-v5-c-form__label {
+  color: var(--amh-ink);
+}
+
+.amh-portal-login .pf-v5-c-form-control {
+  --pf-v5-c-form-control--BackgroundColor: #f5f8fc;
+  --pf-v5-c-form-control--BorderTopColor: #d6e0eb;
+  --pf-v5-c-form-control--BorderRightColor: #d6e0eb;
+  --pf-v5-c-form-control--BorderBottomColor: #7589a1;
+  --pf-v5-c-form-control--BorderLeftColor: #d6e0eb;
+  --pf-v5-c-form-control--Color: var(--amh-ink);
+}
+
+.amh-portal-login .pf-v5-c-button.pf-m-control {
+  --pf-v5-c-button--m-control--BackgroundColor: #f5f8fc;
+  --pf-v5-c-button--m-control--after--BorderTopColor: #d6e0eb;
+  --pf-v5-c-button--m-control--after--BorderRightColor: #d6e0eb;
+  --pf-v5-c-button--m-control--after--BorderBottomColor: #7589a1;
+  --pf-v5-c-button--m-control--after--BorderLeftColor: #d6e0eb;
+  --pf-v5-c-button--m-control--Color: var(--amh-blue);
+}
+
+.amh-portal-login .pf-v5-c-button.pf-m-primary {
+  --pf-v5-c-button--m-primary--BackgroundColor: var(--amh-blue);
+  --pf-v5-c-button--m-primary--hover--BackgroundColor: var(--amh-secondary-blue);
+  --pf-v5-c-button--m-primary--focus--BackgroundColor: var(--amh-secondary-blue);
+  --pf-v5-c-button--m-primary--active--BackgroundColor: var(--amh-secondary-blue);
+  --pf-v5-c-button--m-primary--Color: #fff;
+  --pf-v5-c-button--m-primary--hover--Color: #fff;
+  --pf-v5-c-button--m-primary--focus--Color: #fff;
+  --pf-v5-c-button--m-primary--active--Color: #fff;
+  font-weight: 600;
+}
+
+.amh-portal-login .amh-nfc-login {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--amh-nfc-divider);
+  color: var(--amh-blue);
+  font-size: 0.9375rem;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .amh-portal-sign-in .pf-v5-c-login {
+    align-items: center;
+    padding-inline: 1.5rem;
+  }
+
+  .amh-portal-sign-in .pf-v5-c-login__container {
+    max-width: 52rem;
+    grid-template-columns: minmax(0, 52rem);
+    padding-inline: 0;
+  }
+
+  .amh-portal-sign-in #kc-form-wrapper {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: 2rem;
+  }
+
+  .amh-portal-sign-in .amh-nfc-login {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    margin: 0;
+    padding: 0 0 0 2rem;
+    border-top: 0;
+    border-inline-start: 1px solid var(--amh-nfc-divider);
+  }
+}
+
+.amh-portal-login #kc-logout-confirm .form-actions {
+  margin-block-start: 1.5rem;
+}
+
+.amh-portal-login .amh-nfc-login::before {
+  content: "";
+  display: block;
+  width: min(100%, 9.75rem);
+  height: 6.5rem;
+  margin: 0 auto 0.5rem;
+  background: url("../img/contactless-card.svg") center / auto 116% no-repeat;
+}
+
+.amh-portal-login .amh-nfc-login p {
+  color: var(--amh-muted);
+}
+
+.amh-portal-login .amh-nfc-login button {
+  background: #edf4fa;
+  border: 1px solid #9bb5cc;
+  border-radius: 4px;
+  color: var(--amh-blue);
+  padding: 0.3rem 0.65rem;
+  font: inherit;
+}
+
+.amh-portal-login .amh-nfc-login button:hover {
+  background: #dceaf6;
+}
+
+.amh-portal-login :is(input, button, a, select):focus-visible {
+  outline: 2px solid var(--amh-secondary-blue);
+  outline-offset: 2px;
+}
